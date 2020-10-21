@@ -1,65 +1,91 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import ImageComponents from "./components/imageComponents";
+import InfiniteScroll from "react-infinite-scroll-component";
+import React from "react";
+import { fetchdata } from "./api/hello";
+import { get } from "lodash";
+import ModalComponent from "./components/ModalData";
+import Head from "next/head";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-export default function Home() {
-  return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+class PhotoViewer extends React.Component {
+  state = {
+    itemLength: [],
+    showModal: false,
+    selectedIndex: 0,
+  };
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+  fetchMoreData = async () => {
+    const data = await fetchdata(5);
+    setTimeout(() => {
+      this.addImages(data);
+    }, 100);
+  };
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+  addImages = (data = {}, newImages = []) => {
+    let imagesResponse = get(data, "json", []);
+    imagesResponse.forEach((item) => {
+      const image = get(item, "urls.regular", "");
+      newImages.push(image);
+    });
+    this.setState((prevState) => ({
+      itemLength: prevState.itemLength.concat(newImages),
+    }));
+  };
+  componentDidMount() {
+    const { data } = this.props;
+    this.addImages(data);
+  }
+  closeModal = () => {
+    this.setState({
+      showModal: false,
+    });
+  };
+  openModal = (index) => {
+    console.log("openModal -> index", index);
+    this.setState({
+      showModal: true,
+      selectedIndex: index,
+    });
+  };
+  render() {
+    console.log("this.props", this.props);
+    const { itemLength, showModal, selectedIndex } = this.state;
+    return (
+      <div>
+        <Head>
+          <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+            integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+            crossOrigin="anonymous"
+          />
+        </Head>
+        <ModalComponent
+          show={showModal}
+          close={this.closeModal}
+          data={itemLength}
+          imageIndex={selectedIndex}
+        />
+        <InfiniteScroll
+          dataLength={itemLength}
+          next={this.fetchMoreData}
+          hasMore={true}
+          loader={<h4>Loading...</h4>}
         >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
-  )
+          <ImageComponents data={itemLength} selectedImage={this.openModal} />
+        </InfiniteScroll>
+      </div>
+    );
+  }
 }
+
+export async function getServerSideProps() {
+  let res = await fetchdata();
+  return {
+    props: {
+      data: res,
+    },
+  };
+}
+
+export default PhotoViewer;
