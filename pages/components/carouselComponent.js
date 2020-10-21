@@ -11,7 +11,7 @@ class CarouselComponent extends React.Component {
     });
   };
   render() {
-    const { data } = this.props;
+    const { data = [] } = this.props;
     console.log("CarouselComponent -> render -> data", data);
     const { activeIndex } = this.state;
     console.log("CarouselComponent -> render -> activeIndex", activeIndex);

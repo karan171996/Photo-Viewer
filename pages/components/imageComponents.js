@@ -3,7 +3,7 @@ import React from "react";
 
 class ImageComponents extends React.Component {
   render() {
-    const { data } = this.props;
+    const { data = [] } = this.props;
     return (
       <div className={styles.parentsection}>
         {data.map((item, index) => {
